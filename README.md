@@ -15,9 +15,8 @@ Week 1
 lecture: [lectures/le1_intro_lecture/week1.pptx](https://github.com/DataInvestigations/class_materials/tree/main/lectures/le1_intro_lecture/week1.pptx)
 
 #### Thursday:
-lecture: [ex1_intro_to_R.pptx](https://github.com/VTQuantMethodsEEB/klangwig/blob/master/lectures/week_1_intro_to_R/ex1_intro_to_R.pptx)
+lecture: [week1_introR.pptx](https://github.com/DataInvestigations/class_materials/blob/main/lectures/le1.5_R%20crash%20course/week1_introR.pptx)
 
-code: [ex1_intro_to_R.R](https://github.com/VTQuantMethodsEEB/klangwig/blob/master/lectures/week_1_intro_to_R/ex1_intro_to_R.R)
 
 ##### Task list for next week:
 - Submit screenshot of program installs

@@ -1,8 +1,8 @@
 ---
 title: "R Crash Course"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 # Download and read in data
@@ -17,7 +17,7 @@ Easiest: Click the link above, Click the drop-down that says 'Code'. Under Local
 A simple function, read.csv(), that allows you to easily bring your .csv into the R environment. Simply run below line of code to read in your data: 
 
 ```{r}
-batdat <- read.csv("datasets/bat_data.csv")
+batdat <- read.csv("bat_data.csv")
 ```
 
 ```{r, echo=FALSE}
