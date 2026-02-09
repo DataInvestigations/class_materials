@@ -1,0 +1,13 @@
+mareage,numeric,4-30,mare age in years
+region,character,A_west; B_central; C_east,region of the island in which animals lived
+no_trts,numeric,0-7,number of PZP innoculations received over lifetime
+no_changes,numeric,0-10; NA (animals not observed that year),the number of changes females made not including instatnces when they were found alone
+total_agg_given,numeric,0-33,the number of instances of aggression females initiated toward other females
+total_agg_rcd,numeric,0-40,the number of instances of aggression females received from other females
+ch_per_hour,numeric,0-12.00000005; NA (animals not observed that year),the number of gorup changes females made per hour of observation
+agg_given_per_hrs_obs,numeric,0-6.823529412; NA (animals not observed that year),the number of instances of aggression that females initiated per the number of hours observed
+agg_rcd_per_hrs_obs,numeric,0-10.8; NA (animals not observed that year),the number of instances of aggression that females received per the number of hours observed
+total_time_watched_min,numeric,0-855,the total time mares were watched in minutes
+total_time_watched_hrs,numeric,0-14.25,the total time mares were watched in hours
+avg_rel_rank,numeric,0-1; NA (animals for which we did not see aggressive interactions),mare rank relative to others in the group averaged over each year of the study
+ave_rump,numeric,0-4.1; NA (animals for which we did not collect condition scores),mare average rump score (physical condition) averaged over each year of the study

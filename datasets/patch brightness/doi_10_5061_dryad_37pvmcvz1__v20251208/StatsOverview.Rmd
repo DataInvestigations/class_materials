@@ -1,0 +1,731 @@
+---
+title: "Overview of Stats"
+author: "Hannah R. Reeb"
+date: "2025-10-22 version"
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+The main findings, statistical models, and relevant plots for patch area and brightness results, associated with the manuscript titled "A plumage patch that signals nest occupancy is shaped by social environment". 
+
+
+
+# Final dataset 
+File contains: Area, colony/specimen info, brightness (median aggregation, B2 measurement converted to decimal in range 0-1 for later use in beta regression), note that specimens are limited to collection dates before mid-July to account for roaming behaviors at the end of breeding season. 
+```{r}
+finaldata <- read.csv("5NovPatchData.csv")
+```
+#### Code for gathering brightness measures from OceanOptics Software
+This code was adapted from an example written by MBT. 
+```{r eval= FALSE}
+#median B2
+#set working directory to folder containing specimen measurements, grouped by folders
+
+#install.packages("pavo")
+#load necessary packages
+library(pavo)
+library(ggplot2)
+library(tidyverse)
+require(pavo)
+require(ggplot2)
+
+#require(tidyverse)
+set.seed(16122104)
+
+#import spectra from folder
+#trims to 300-700 nm
+repspecs <- getspec(getwd(), ext = "txt", decimal = ".", subdir = TRUE, subdir.names = TRUE)
+
+#extract ID and patch from specimen files
+names <- names(repspecs)
+names_sp1<-names %>%
+  tibble() %>%
+  separate('.', into = c("sam_num","samp_patch"), sep = "/")
+names_sp2 <- names_sp1 %>%
+  select(samp_patch) %>%
+  separate(samp_patch, into = c("sample_patch", "junk"), sep = "_R") %>%
+  select(sample_patch)
+
+#remove NA row
+names_sp2 <- names_sp2[-1,]
+
+
+#aggregate the five measures for each ID and patch to one measure (FUN=median)
+#code chunk to edit method of summary-- FUN= mean, median
+repagg.sl <- aggspec(repspecs, FUN= median, by = names_sp2$sample_patch)
+
+#quick plot of spectra - multiple panels 
+#explorespec(repagg.sl, by = 3)
+
+#process the spectra to run summary command
+spec.agg.sm <- procspec(repagg.sl, opt = "smooth", span = 0.2)
+
+#calculate brightness measure from averaged spectra
+P_bright_median<-summary(spec.agg.sm, subset = 'B2')
+
+#create a column listing ID and patch
+nm<-row.names(P_bright_median)
+nm2<-t(data.frame(strsplit(nm, " ")))
+P_bright_median2<-data.frame(nm2, P_bright_median)
+rownames(P_bright_median2) <- NULL
+
+#separate nm2 data to get columns for ID, patch, and B2
+id_patch <- P_bright_median2 %>%
+  separate_wider_delim(nm2, delim = "_", names = c("ID", "PatchType"))
+
+#pivot data frame so that brightness so each patch type is organized by ID
+orgID <- id_patch %>%
+  pivot_wider(names_from = PatchType, values_from = B2)
+
+#write to an excel file
+#measures included in file labeled "Pruned11DecData.csv"
+
+```
+
+# Test for correlation of brightness and area
+Treat brightness and area as separate response variables given low correlation
+```{r}
+res <- cor.test(finaldata$forehead, finaldata$Area, 
+                method = "pearson")
+res
+```
+## Allometrics control
+Test if area of patch can be explained by the size of the bird (as head volume and depth)
+References data from Wagnon & Brown, 2020 (https://doi.org/10.1098/rsbl.2020.0264).
+```{r}
+head_meas <- read.csv("mergeWagnon2020.csv")
+
+```
+### Test normality for allometrics
+```{r}
+shapiro.test(head_meas$Area) #normal
+shapiro.test(head_meas$HeadDep) #nonnormal
+shapiro.test(head_meas$Volcm3)#normal
+
+```
+### Hypothesis testing for head size
+```{r}
+#### Head depth
+#use Spearman's rank correlation for nonnormal variable
+cor.test(head_meas$Area, head_meas$HeadDep, method = "spearman")
+#confirm non-effect of ties using Kendall's tau
+cor.test(head_meas$Area, head_meas$HeadDep, method = "kendall")
+#both tests show non-correlation between area of the patch and size of the head (head depth)
+
+#### Head volume
+cor.test(head_meas$Area, head_meas$Volcm3, method = "pearson")
+#show non-correlation between area of patch and size of head (volume)
+library(car)
+#### confirm with modeling
+pred1 <- lm(Area ~ Sex + Volcm3 + Volcm3*Sex, data = head_meas)
+pred <- lm(Area ~ Sex + Volcm3, data = head_meas)
+Anova(pred1, type = 3)
+Anova(pred, type = 2) #Sex is predictor of area, Head vol is not
+
+
+```
+
+
+# Brightness 
+## Generate model
+Use beta regression to account for proportionality without transformation. Forehead measure calculated as median B2, percent brightness converted to 0-1. (See SupportStats.Rmd for justification). Phi is treated as a nuisance parameter because estimation of coefficients in the linear predictor of model are unchanged either way, and we are not interested in reporting precision (phi).
+```{r}
+#initial model, to be pared down
+library(betareg)
+library(car)
+bright <- betareg(forehead ~ log(Colony.Size) + Year + Sex + Date + year2 +  log(Colony.Size)*year2 + log(Colony.Size)*Sex + year2*Sex + Date*year2 + log(Colony.Size)*year2*Sex, data = finaldata, phi=FALSE)
+Anova(bright, type = 3)
+```
+### Brightness final model and p-values
+Pared by descending p-value, excluding variables of interest and significant interactions. 
+* Date significant, year2 significant
+```{r}
+# final model
+Fbright <- betareg(forehead ~ log(Colony.Size) + Year + Sex + Date + year2, data = finaldata, phi=FALSE)
+
+```
+
+```{r, echo = FALSE}
+library(car)
+Anova(Fbright, type = 3, test="F")
+summary(Fbright)
+```
+## Brightness plots
+### Scatter plot: Date vs. Brightness
+```{r, echo = FALSE}
+#Median B2 0-1, Date , Raw data
+library(ggplot2)
+scatJD <- qplot (x= finaldata$Date, y= finaldata$forehead) + 
+  labs(title = "Data, no predicted values: Date and Forehead Brightness",
+       x = "Date", y = "Forehead Brightness") 
+scatJD
+```
+
+### Predicted beta regression model for significant variables (Date and Year2)
+#### AI (ChatGPT, version 4, inquiry date September 19, 2024) was used as a search engine to find the correct code to create this style of plot in R. The method of data analysis, the regression itself, and the decision to showcase the relationship graphically in this manner was not influenced or searched in AI in any capacity.
+```{r}
+#Generate predicted values from the model
+library(betareg)
+predictionsBr <- predict(Fbright, type = "response")
+#create df with predicted values for plotting
+plot_Br <- data.frame(
+  Year = finaldata$Year,
+  Sex = finaldata$Sex,
+  Date = finaldata$Date,
+  year2 = finaldata$year2,
+  forehead = finaldata$forehead,
+  predictedBr = predictionsBr,
+  Colony.Size = finaldata$Colony.Size
+)
+#Plot actual values as points, insert predicted values as smoothed line
+# Year2 and Brightness (significant)
+y2interaction <- ggplot(plot_Br, aes(x = Year, y = forehead)) +
+  geom_point(alpha = 0.6) +  # Plot actual data points
+  geom_smooth(aes(y = predictedBr), method = "loess", se = TRUE) +  
+  labs(title = "Beta Regression: Year and Forehead Brightness",
+       x = "Year2", y = "Forehead Brightness (% Reflectance") +
+  theme_minimal()
+y2interaction
+
+# Date and Brightness (significant)
+Date_Bright <- ggplot(plot_Br, aes(x = Date, y = forehead)) +
+  geom_point(alpha = 0.6) +  # Plot actual data points
+  geom_smooth(aes(y = predictedBr), method = "lm", se = TRUE) +  # Smoothed line
+  labs(title = "Beta Regression:  Date and Forehead Brightness",
+       x = "Date", y = "Forehead Bright") +
+  theme_minimal()
+Date_Bright
+
+# Colony Size and Brightness (for comparison, not significant)
+colony_Bright <- ggplot(plot_Br, aes(x = Colony.Size, y = forehead)) +
+  geom_point(alpha = 0.6) +  # Plot actual data points
+  geom_smooth(aes(y = predictionsBr), method = "lm", se = TRUE) +  # Smoothed line
+  labs(title = "Predicted Beta Regression Model: Patch Brightness and Colony Size",
+       x = "Colony Size", y = "Brightness of Patch (% Reflectance)") +
+  scale_x_log10() +  # Apply log scale to y-axis; raw points on log scale to account for transform
+  theme_minimal()
+colony_Bright
+
+```
+
+### Sex and Brightness plots and statistics for comparison
+```{r}
+library(dplyr)
+brightbox <- ggplot(finaldata, aes(x=Sex, y=forehead)) + 
+  geom_boxplot() + 
+  geom_jitter(shape=16, position=position_jitter(0.2))+labs(y = "Brightness of Patch (% Reflectance)") + 
+  theme(
+    panel.grid.major = element_blank(), 
+    panel.grid.minor = element_blank()
+          )
+brightbox 
+
+diffbright <- wilcox.test(forehead ~ Sex, data = finaldata,
+                        exact = FALSE )
+diffbright #W=7201, p=0.9447
+
+average_patch_bright_male <- finaldata %>%
+  filter(Sex=='M') %>%
+  summarize(avg_patch_bright = mean(forehead, na.rm = TRUE))
+average_patch_bright_male #0.2487268
+
+average_patch_bright_female <- finaldata %>%
+  filter(Sex=='F') %>%
+  summarize(avg_patch_bright = mean(forehead, na.rm = TRUE))
+average_patch_bright_female #0.248514	
+
+```
+
+
+# Area
+## Test normality and confirm use of log-transformed colony size
+```{r}
+#testing normality in model where colony size is untransformed
+unTRANSFORMArea <- lm(Area ~ Colony.Size + Year + Sex + Date + year2,
+                      data = finaldata)
+summary(unTRANSFORMArea)
+x = residuals(unTRANSFORMArea)
+shapiro.test(x) #accept null
+
+library(ggplot2)
+
+qq_plot <- ggplot(data = data.frame(resid = residuals(unTRANSFORMArea)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(linetype = 'dashed', color = '#ef8a47', size = 1) +
+  labs(
+    title = "Regression model for patch area",
+    x = "Theoretical Quantiles", 
+    y = "Ordered Values",
+    subtitle = "Residual QQ Plot"
+  )
+
+qq_plot
+
+#testing for normality when colony size is log-transformed
+fArea <- lm(Area ~ log(Colony.Size) + Year + Sex + Date + year2,
+            data = finaldata)
+summary(fArea)
+x = residuals(fArea)
+shapiro.test(x) # p = 0.203, accept null
+
+qq_plotA <- ggplot(data = data.frame(resid = residuals(fArea)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(linetype = 'dashed', color = '#ef8a47', size = 1) +
+  labs(
+    title = "Regression model for patch area, colony size log-transformed",
+    x = "Theoretical Quantiles", 
+    y = "Ordered Values",
+    subtitle = "Residual QQ Plot"
+  )
+
+qq_plotA
+
+
+library(lmtest)
+# Checking for heteroscedasticity
+plot(fArea, which=1)
+bptest(fArea) #accept the null; consider model to have homoscedascticity
+
+
+#Test to confirm starting model normality
+
+ar <- lm(Area ~ log(Colony.Size) + Year + Sex + Date + year2 + 
+           log(Colony.Size)*year2 + log(Colony.Size)*Sex +
+           year2*Sex + Date*year2 + log(Colony.Size)*year2*Sex,
+         data = finaldata)
+summary(ar)
+x = residuals(ar)
+shapiro.test(x) #p = 0.277
+
+qq_plotB <- ggplot(data = data.frame(resid = residuals(ar)), aes(sample = resid)) +
+  stat_qq() +
+  stat_qq_line(linetype = 'dashed', color = '#ef8a47', size = 1) +
+  labs(
+    title = "Regression model for patch area",
+    x = "Theoretical Quantiles", 
+    y = "Ordered Values",
+    subtitle = "Residual QQ Plot"
+  )
+
+qq_plotB
+```
+## Generate model
+
+```{r}
+library (car)
+#initial model, to be pared down
+ar <- lm(Area ~ log(Colony.Size) + Year + Sex + Date + year2 + 
+                 log(Colony.Size)*year2 + log(Colony.Size)*Sex +
+                  year2*Sex + Date*year2 + log(Colony.Size)*year2*Sex,
+         data = finaldata)
+Anova(ar, type = 3)
+
+```
+
+## Test normality of variables used in model 
+```{r}
+testnorm <- read.csv("Pruned11DecData.csv")
+shapiro.test(testnorm$Area)
+qqnorm(testnorm$Area)
+qqline(testnorm$Area)
+#rounded, p-value for area is 0.05. To confirm approaching non-normality does not affect our results, I test whether difference in the hypothesized distribution affects significant relationships by fitting a Rank-based estimation regression, which is a nonparametric regression that can be used in linear regression scenarios. I fit the same initial variables as in my linear model, paring down the model, and determine if the variables that were significant in our linear regression are the same as in this scenario. Results show the same variables are significant as in linear regression. 
+
+# Rank-based estimation regression as a non-parametric regression alternative. Robust to outliers. 
+# Code adapted from the R Handbook (Mangiafico 2016, https://rcompanion.org/handbook/F_12.html)
+#install.packages("Rfit")
+library(Rfit)
+# initial model
+non_para <- rfit(Area ~ log(Colony.Size) + Year + Sex + Date + year2 + 
+                    log(Colony.Size)*year2 + log(Colony.Size)*Sex +
+                    year2*Sex + Date*year2 + log(Colony.Size)*year2*Sex,
+                  data = finaldata)
+summary(non_para)
+# final model, same variables as in lm are significant
+non_para <- rfit(Area ~ log(Colony.Size) + Year + Sex + Date + year2 ,
+                 data = finaldata)
+summary(non_para)
+
+
+#Colony Size is non normal-- we log transform to reduce the skew. 
+shapiro.test(testnorm$Colony.Size)
+qqnorm(testnorm$Colony.Size)
+qqline(testnorm$Colony.Size)
+
+testnorm$transfColSize <- log(testnorm$Colony.Size)
+qqnorm(testnorm$transfColSize)
+qqline(testnorm$transfColSize) 
+
+
+```
+
+
+### Area final model and p-values
+Pared by descending p-value, excluding variables of interest and significant interactions. 
+* year2 is significant, sex is significant, colony size is significant
+
+```{r}
+# final model 
+library(report)
+fArea <- lm(Area ~ log(Colony.Size) + Year + Sex + Date + year2,
+                  data = finaldata)
+Anova(fArea, type = 3)
+#generate beta coefficients
+summary(fArea)
+
+
+```
+## Area plots
+
+
+### Area of Patch for Males and Females
+
+#### Graph: Boxplot with jitter
+```{r}
+# Plot boxplot with jitter
+
+area_box <- ggplot(finaldata, aes(x=Sex, y=Area)) + 
+  geom_boxplot() + 
+  geom_jitter(shape=16, position=position_jitter(0.2))+labs(y = "Area of Patch (mm2)") +
+theme(
+  panel.grid.major = element_blank(), 
+  panel.grid.minor = element_blank()
+)
+area_box
+
+#Test statistic and means
+diffarea <- wilcox.test(Area ~ Sex, data = finaldata,
+                        exact = FALSE )
+diffarea #W=9028.5, p= 0.0009301
+
+average_patch_area_male <- finaldata %>%
+  filter(Sex == "M") %>%
+  summarize(avg_patch_area = mean(Area, na.rm = TRUE))
+print(average_patch_area_male) #48.44
+
+average_patch_area_female <- finaldata %>%
+  filter(Sex == "F") %>%
+  summarize(avg_patch_area = mean(Area, na.rm = TRUE))
+print(average_patch_area_female) #53.01
+
+
+
+```
+### Generate predicted values from area model
+```{r}
+#generate predicted values
+predictionsAR <- predict(fArea, type = "response")
+
+# Create a data frame for plotting
+plot_Area <- data.frame(
+  Colony.Size = finaldata$Colony.Size,
+  Year = finaldata$Year,
+  year2 = finaldata$year2,
+  Sex = finaldata$Sex,
+  Area = finaldata$Area,  # Actual response variable
+  predictedAR = predictionsAR   # Fitted (predicted) values
+)
+```
+
+### Area of Patch vs. Colony Size 
+```{r}
+# plot, no confidence interval
+PLMareaColSize <- ggplot(plot_Area, aes(x = Colony.Size, y = Area)) +
+  geom_point(alpha = 0.6) +  # Plot actual data points 
+ geom_smooth(aes(y=predictedAR), method = "lm", se = FALSE, color = "blue", size = 1.2) + labs(title = "Predicted Linear Model: Area and Colony Size",
+       x = "Colony Size", y = "Area") +
+  theme_minimal()
+PLMareaColSize
+```
+### Area of Patch vs. Year (Significant)
+```{r}
+# plot AREA YEAR
+PLMareaYear <- ggplot(plot_Area, aes(x = Year, y = Area)) +
+  geom_point(alpha = 0.6) +  # Actual data points
+  geom_smooth(aes(y = predictedAR), method = "lm", formula = y ~ poly(x, 2), se = FALSE, color = "blue", size = 1.2) +  # Quadratic model
+  labs(title = "Predicted Linear Model: Area and Year",
+       x = "Year", y = "Area") +
+  theme_minimal()
+PLMareaYear
+
+```
+# Means and Standard Error for Area and Brightness of the Patch, Females vs. Males
+```{r}
+se <- function(x) sd(x)/sqrt(length(x))
+
+#wrangle dataset into separate data frames for males and females
+females <- subset(finaldata, finaldata$Sex=='F')
+#n=114 females
+males <- subset(finaldata, finaldata$Sex=='M')
+#n=127 males
+
+#SE for area of patch
+ARfemSE <- se(females$Area) #0.95
+ARmaSE <- se(males$Area) #0.80
+
+#SE for brightness of patch
+BRfeSE <- se(females$forehead) #0.0066
+BRmaSE <- se(males$forehead) #0.0063
+
+#mean area of patch
+meanFem <- mean(females$Area) #53.01
+meanMal <- mean(males$Area) #48.44
+
+#mean brightness of patch
+meanBrFem <- mean(females$forehead) #0.25
+meanBrMal <- mean(males$forehead) #0.25
+
+
+```
+
+# Selection Differential Calculations and Plots 
+Imported dataset is a subset of the larger final dataset annotated such that individuals collected in the 14 years prior to the selection event in 1996 (before group) are marked 'B' and in the 14 years after the event (after group) are marked 'A'.
+
+
+```{r}
+## write functions
+i <- function(Xa, Xb, Va, Vb, Na, Nb, n){(Xa-Xb)/(sqrt(Vb))}
+j <- function(Va, Vb){(Va-Vb)/Vb}
+#functions for significance testing
+#t, significance value for i
+t <- function(Xa, Xb, Va, Vb, Na, Nb, n){(Xa-Xb)/sqrt((n*(((Nb-1)*Vb)+((Na-1)*Va)))/((n-2)*(Nb*Na)))}
+#F, significance value for j
+F <- function(Va, Vb){Vb/Va}
+```
+
+```{r}
+#import data
+BAdata <- read.csv ("SelectionDifferentialDataannotatedBA.csv")
+
+```
+
+```{r}
+#definition of variables in formula
+
+# Xa = mean value for "after" group 
+# Xb = mean value for "before group
+# Va = variance for  "after" group
+# Vb = variance for "before" group
+# Na = number of individuals in "after" group
+# Nb = number of individuals in "before" group
+# n = number of individuals total (combined before and after groups)
+
+# set up values for function, for area
+a_group<-subset(BAdata, BorA == "A" )
+Xa <- mean(a_group$Area)
+Va <- var(a_group$Area)
+Na <- nrow(a_group) #73
+Na <- 73
+
+b_group<-subset(BAdata, BorA == "B")
+Xb <- mean(b_group$Area)
+Vb <- var(b_group$Area)
+Nb <- nrow(b_group) #94
+Nb <- 94
+n <- Na + Nb
+
+
+
+
+# Calculate for Area
+i_for_area <- i(Xa, Xb, Va, Vb, Na, Nb, n) # -0.908
+j_for_area <- j(Va,Vb) # -0.319
+#selection is negative and stabilizing
+
+#significance testing 
+t_for_area <- t(Xa, Xb, Va, Vb, Na, Nb, n) #t= -6.271
+F_for_area <- F(Va,Vb) #F = 1.468
+
+
+
+
+```
+#### AI usage: AI (ChatGPT, version 4, inquiry date December 18, 2024) was used as a search engine to find the correct code to create this style of plot in R. The decision to showcase the relationship graphically in this manner was not influenced by or searched in AI in any capacity.
+```{r}
+library(dplyr)
+seldiff_data <- finaldata %>%
+  group_by(Year) %>%
+  mutate(year_count = n()) %>%
+  ungroup()
+
+## FOR BRIGHTNESS: 
+# Aggregate patch brightness by year, calculating the mean
+aggregated_data <- seldiff_data %>%
+  group_by(Year) %>%
+  summarize(Mean_Patch_Bright = mean(forehead, na.rm = TRUE))
+
+summary_data <- seldiff_data %>%
+  group_by(Year) %>%
+  summarise(
+    avg_Bright = mean(forehead, na.rm = TRUE),  
+    year_count = first(year_count),       
+    sd = sd(forehead, na.rm = TRUE), 
+    n = n(),
+    se = sd / sqrt(n)
+  ) %>%
+  ungroup()
+
+# Create the scatterplot for brightness
+ggplot(data=summary_data) +
+  aes(x = Year, y = avg_Bright, size=year_count) +
+  geom_point(color = "blue") +
+  geom_errorbar(aes(ymin = avg_Bright - se, ymax = avg_Bright + se), width = 0.75, size = 0.25) +
+  geom_vline(xintercept = 1996, linetype = "dashed", color = "red", size = 1) +
+  labs(
+    title = "Mean Patch Brightness by Year",
+    x = "Year",
+    y = "Mean Patch Brightness (% Reflectance)",
+    size = "Number of birds measured"
+  ) +
+  
+  theme_minimal()
+
+
+
+##FOR AREA: 
+# Aggregate patch size by year, calculating the mean
+aggregated_data <- seldiff_data %>%
+  group_by(Year) %>%
+  summarize(Mean_Patch_Size = mean(Area, na.rm = TRUE))
+
+summary_data <- seldiff_data %>%
+  group_by(Year) %>%
+  summarise(
+    avg_Area = mean(Area, na.rm = TRUE),  
+    year_count = first(year_count),        
+    sd = sd(Area, na.rm = TRUE), 
+    n = n(),
+    se = sd / sqrt(n)
+    ) %>%
+  ungroup()
+
+
+# Create the scatterplot
+ggplot(data=summary_data) +
+  aes(x = Year, y = avg_Area, size=year_count) +
+  geom_point(color = "blue") +
+  geom_errorbar(aes(ymin = avg_Area - se, ymax = avg_Area + se), width = 0.75, size = 0.25) +
+  geom_vline(xintercept = 1996, linetype = "dashed", color = "red", size = 1) +
+  labs(
+    title = "Mean Patch Size by Year",
+    x = "Year",
+    y = expression("Mean Patch Size (mm" ^ "2"* ")"),
+    size = "Number of birds measured"
+  ) +
+
+  theme_minimal()
+
+
+```
+
+## Test Repeatability
+Selected the first 49 birds measured (to maximize time between original measurement and repeat measurement)
+
+We first estimate repeatability using the Lessells-Boag equation for repeatability, then confirm accuracy of the estimate and establish confidence interval using the r package ICC. This package also uses variables as defined in Lessells and Boag (1987). Agreement between the two methods for estimating ICC is good. 
+
+#### LBE Equation function
+```{r}
+r<-function(MSA, MSW, n){((MSA-MSW)/n)/(MSW+((MSA-MSW)/n))}
+```
+
+
+## Area Repeatability: Image results
+Read in data sheet 
+```{r}
+library(tidyr)
+patchrep <- read.csv("FinalPatchAreaRepeat.csv")
+library(ICC)
+```
+#### Visual and statistical checks for normality:    
+Normal/Gaussian distributions are required for use in LBE    
+
+```{r}
+qqnorm(patchrep$Original.Image)
+qqline(patchrep$Original.Image)
+shapiro.test(patchrep$Original.Image)
+
+qqnorm(patchrep$Repeat.on.Original.Image)
+qqline(patchrep$Repeat.on.Original.Image)
+shapiro.test(patchrep$Repeat.on.Original.Image)
+
+```
+### Area Repeatability testing:  Original Measure + Original Image **VS** Repeat Measure + Original Image
+**r = 0.74**
+
+```{r}
+
+patchrep <- as_tibble(patchrep)
+samepicpivot <- patchrep %>% 
+  pivot_longer(
+    cols = c("Repeat.on.Original.Image", "Original.Image"),
+    names_to = "survey_num", 
+    values_to = "Area",
+  )
+samepicpivot$ID <- as.factor(samepicpivot$ID)
+summary(aov(data = samepicpivot, Area ~ ID))
+Blbe <- r(190.73, 27.91, 2)
+Blbe
+#Estimate 95% confidence interval
+ICCest(x=ID, y=Area, data=samepicpivot)
+```
+
+
+### Brightness Repeatability results
+
+####Calculate LBE repeatability for brightness (% reflectance, B2) using unaggregated measures of brightness (5 measures for each bird ID, median value not yet calculated)
+**r=0.6828**
+
+```{r}
+brightrep <- read.csv("mergeRawBrightRepOrig.csv")
+#rename and limit data sheet to forehead 
+names(brightrep)[4] <- "repeat_forehead"
+names(brightrep)[5] <- "original_forehead"
+forehead<- brightrep[c("ID","repeat_forehead","original_forehead")]
+
+#pivot chart to create usable data cols for repeatability
+forehead$repeat_ID <- forehead$ID
+names(forehead)[1] <- "1_ID"
+names(forehead)[4] <- "2_ID"
+library(tidyr)
+#put the columns listing brightness into one col, still associated with ID
+#then, make col for survey number (repeat or original)
+forehead <- as_tibble(forehead)
+forepivoted <- forehead %>% 
+  pivot_longer(
+    cols = c("repeat_forehead", "original_forehead"),
+    names_to = "survey_num", 
+    values_to = "B2noAgg",
+  )
+#remove duplicate ID column, rename just ID
+forepivoted<- forepivoted[,-2]
+names(forepivoted)[1] <- "ID"
+forepivoted$ID <- as.factor(forepivoted$ID)
+summary(aov(data = forepivoted, B2noAgg ~ ID))
+Flbe <- r(6.42, 1.21, 10)
+Flbe
+ICCest(x=ID, y=B2noAgg, data=forepivoted)
+```
+
+### Decide measure of central tendency for brightness measures
+5 measures of brightness per sample ID: decide mean vs. median to condense brightness data. Skewed data should use median. Normally distributed should use mean.     
+    
+```{r}
+#read in brightness data that has not been aggregated
+raw <- read.csv("noAggForeheadBrightness.csv")
+
+# convert to 0-1, rather than 0-100 (this is how the data will be used in later regression modeling)
+raw$forehead <- raw$forehead / 100
+rawhist <- hist(x = raw$forehead)
+qqnorm(raw$forehead, pch = 1, frame = FALSE)
+qqline(raw$forehead, col = "steelblue", lwd = 2)
+#visually skewed in histogram and qq-plot
+#confirm non-normal dist. with shapiro-wilk and kolmogorov-smirnov
+library("dgof")
+# ks test reveals non normal distribution-- median measure of B2 ideal
+ks.test(raw$forehead,"pnorm")
+# shapiro test reveals non normal distribution-- median measure of B2 ideal
+shapiro.test(raw$forehead)
+```
+

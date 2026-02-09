@@ -1,0 +1,37 @@
+---
+title: "ex4_data_manipulation"
+author: "kate langwig"
+date: "2026-02-09"
+output: 
+  ioslides_presentation: default
+  beamer_presentation: default
+  github_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Goals for today
+
+- Work in R
+
+- Explore data for group projects
+
+- Use the tidyverse to manipulate data
+
+## Explore the tidyverse
+
+Using le4_data_manipulation.R as a template...
+
+1.  Read your data for the class project into R.
+
+2.  Examine your data for mistakes.
+
+3.  Experiment with “group by” in dplyr to do some calculation.
+
+4.  Use mutate and summarise on your data. How are these different? Annotate your code.
+
+5. Advanced users: Explore the pivot commands, changing data from wider to longer or vice versa
+
+*Next week*:  Commit and push to GitHub as part of your individual assignment for week 4
