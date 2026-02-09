@@ -1,5 +1,5 @@
 ---
-title: "le5_data_git&github"
+title: "Week5 - Git and GitHub"
 author: "kate langwig"
 date: "2026-02-09"
 output: ioslides_presentation
@@ -27,7 +27,7 @@ Why don’t we replicate more studies?
 
 ## What does it mean for research to be “Reproducible”?
 
-Research is *reproducible* when others can reproduce the results of a scientific study given only the original data, code, and documentation
+Research is **reproducible** when others can reproduce the results of a scientific study given only the original data, code, and documentation
 
 ## Who benefits from reproducible research?
 - Researchers
@@ -53,7 +53,7 @@ Research is *reproducible* when others can reproduce the results of a scientific
 
 ## Terminology
 
--   repository: like a project folder
+-   **repository**: like a project folder
   - All data, code, and outputs relevant to a particular project live together in the same repository (“repo”)
   - It is usually a local folder on your computer. You can keep code files, text files, image files, you name it, inside a repository.
   - Track revision history within each repo
@@ -61,22 +61,21 @@ Research is *reproducible* when others can reproduce the results of a scientific
 
 
 ## Terminology
--   commit: This is the command that gives Git its power. When you commit, you are taking a “snapshot” of your repository at that point in time, giving you a checkpoint to which you can reevaluate or restore your project to any previous state.When you first start "commiting", it is important to remember this is taking the picture, not SENDING the picture. (Sending is called "pushing")
+-   **commit**: This is the command that gives Git its power. When you commit, you are taking a “snapshot” of your repository at that point in time, giving you a checkpoint to which you can reevaluate or restore your project to any previous state.When you first start "commiting", it is important to remember this is taking the picture, not SENDING the picture. (Sending is called "pushing")
 - we use commits to track the sequential changes we are making on our local version and then PUSH them back to remote repo
 
 ## Terminology cont.
--   push: This is how you upload your file to GitHub. Remember, you need to both commit and push for your file to be sent to GitHub.
+-   **push**: This is how you upload your file to GitHub. Remember, you need to both commit and push for your file to be sent to GitHub.
 
-- pull: This is how you bring edits from GitHub to your computer. If I make changes to your code, pulling will integrate them. You will need to do this every time you open your project. 
+- **pull**: This is how you bring edits from GitHub to your computer. If I make changes to your code, pulling will integrate them. You will need to do this every time you open your project. 
 
--   branch: How do multiple people work on a project at the same time without Git getting them confused? Usually, they “branch off” of the main project with their own versions full of changes they themselves have made. After they’re done, it’s time to “merge” that branch back with the “master,” the main directory of the project. Don't worry too much about this now.
+-   **branch**: How do multiple people work on a project at the same time without Git getting them confused? Usually, they “branch off” of the main project with their own versions full of changes they themselves have made. After they’re done, it’s time to “merge” that branch back with the “master,” the main directory of the project. Don't worry too much about this now.
 
 ## GitHub workflow
-- *Clone* a copy of a repo to your computer
-- *Pull* latest updates from cloud to computer
+- **Pull** latest updates from cloud to computer
 - Edit scripts, graphs, other files
-- Review changes and *commit* them 
-- *Push* commits to the (cloud) repository
+- Review changes and **commit** them 
+- **Push** commits to the (cloud) repository
 
 
 ## Class pledge
@@ -88,7 +87,7 @@ I swear I will never make a change to my repository without committing and pushi
 ## Sending your files to our class repository
 
 -   We have an "organization" account for our class
--   Normally, we would have to pay for private repositories,github is giving us UNLIMITED private repositories. That's pretty awesome.
+-   Can make repos public or private
 -   Why should we want things open-source? Why not?
 
 # Pre-course homework
@@ -178,7 +177,7 @@ gitcreds_get()
 
 -   In RStudio, click File--\>New Project--\>Version Control--\>Git
 -   In Repository Name: Copy and paste the hyperlink from the browser of your repository
-    -   It will have a name like this: <https://github.com/VTQuantMethodsEEB/WomenInDataScience>
+    -   It will have a name like this: <https://github.com/DataInvestigations/your_name>
 -   In Project Directory: It should have the same name as the repo on GitHub (should autofill). It should be the name after the last /
 -   Create Project as subdirectory: Pick a smart place on your computer that you find without using a search function
 -   Click OK and you should clone into a new window that says 'YourRepo - main'
