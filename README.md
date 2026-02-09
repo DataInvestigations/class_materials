@@ -20,3 +20,29 @@ activity: [R-crash-course.pdf](https://github.com/DataInvestigations/class_mater
 
 ##### Task list for next week:
 - Submit screenshot of program installs
+
+Week 2
+-------------------
+#### Tuesday: 
+
+lecture: snowday
+
+#### Thursday:
+lecture: [AskingQuestions-ppt-act.pptx](https://github.com/DataInvestigations/class_materials/blob/main/lectures/le2_ask%20a%20question%20lecture/AskingQuestions-ppt-act.pptx)
+activity: [Student Handout.docx](https://github.com/DataInvestigations/class_materials/blob/main/lectures/le2_ask%20a%20question%20lecture/Student%20Handout.docx)
+
+
+Week 3
+-------------------
+#### Tuesday:
+lecture: [le3_bio_background.pptx](https://github.com/DataInvestigations/class_materials/blob/main/lectures/le3_background/le3_bio_background.pptx)
+
+#### Thursday:
+activity: annotated bibliography
+
+Week 4
+--------------------
+
+
+
+
