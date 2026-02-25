@@ -101,6 +101,7 @@ ggsave(file="/Users/klangwig/Dropbox/teaching/quant grad course/lectures/example
        width=7,height=7,units="in",dpi=300,
        useDingbats=FALSE) #use Dingbats is surprisingly useful because it prevents points from being turned in o's in some programs
 
+###KL - pick up here
 
 #show the same data, but show multiple "smalls"
 g1=ggplot(data=batdat,aes(x=nspecies,y=lgdL))+
