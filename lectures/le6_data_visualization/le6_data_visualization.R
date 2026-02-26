@@ -162,7 +162,7 @@ g3
 
 #why aren't there lines? Ohhh..our old friend date!
 
-batdat$date.new=as.Date(batdat$date, "%m/%d/%y")
+batdat$date.new=as.Date(batdat$date, "%m/%d/%y") #%y 2 digit year 
 
 g3=ggplot(data=batdat,aes(x=date.new,y=count,color=nspecies,shape=site))+
   geom_point(size=2)+
