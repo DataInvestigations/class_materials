@@ -1,0 +1,434 @@
+---
+title: "Linear model parameters"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+  slidy_presentation: default
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup,echo=FALSE,message=FALSE}
+library(knitr)
+knit_hooks$set(basefig=function(before, options, envir) {
+                   if (before) {
+                       par(bty="l",las=1)
+                   } else { }
+               })
+opts_chunk$set(fig.width=6,fig.height=4,fig.align="center",tidy=FALSE)
+```
+
+## Roadmap of the rest of the class
+- Some individual projects left but much will be integrated into the group project
+- Next group project due: Preliminary analyses and figures for *Final group presentation*
+  - every group member must contribute one figure + one analysis
+  - these should be decided on in advance and communicated among member
+  - Prelim: April 8, Presentations: April 30
+- You will also hand in an *individual* final project write-up
+  - I will run through them an AI checker
+
+## Objectives
+
+-   Understand how to interpret R output and parameters in linear models
+-   Be able to describe the difference between an interactive and
+    additive model
+-   Plot predictions from additive and interactive linear models
+
+## Model parameters: definitions
+
+-   Parameters of a linear model typically characterize *differences* in
+    means
+-   These are differences per unit of change for *continuous*
+    predictors,
+-   These are differences between groups (or between group averages) for
+    *categorical* predictors
+    -   Refresh: categorical predictors are referenced against a
+        baseline (labeled Intercept)
+
+## Coding for categorical predictors: contrasts
+
+-   What do the parameters of a linear model mean?
+  - other names for parameters: coefs, slopes (continuous), $\beta$
+-   Start with categorical variables, because they're potentially more
+    confusing ("intercept and slope" isn't too hard)
+-   Default R behaviour: *treatment contrasts*
+    -   $\beta_1$ = expected value in baseline group (= first level of
+        the factor variable, by default the first in alphabetical
+        order, labeled **Intercept**);
+    -   $\beta_i$ = expected difference between group $i$ and the first
+        group.
+
+## Example
+
+-   All model building is about hypothesis testing
+
+-   It important to understand which variables go on the *x-axis* and
+    might determine patterns in your *y* (response variable)
+
+-   I want to test the hypothesis that the number of ant colonies (*y*)
+    is higher in one place (*x*) than another.
+
+-   My *places* are field and forest - two categorical *parameters* of
+    the *place* variable
+
+## Ant-colony example (making my own dataset):
+
+Define data:
+
+```{r define_data1}
+forest <- c(9, 6, 4, 6, 7, 10)
+field  <- c(12, 9, 12, 10)
+ants <- data.frame(
+  place=rep(c("field","forest"),
+            c(length(field), length(forest))),
+  colonies=c(field,forest),
+    observers=c(1,3,2,1,5,2,1,2,1,1)
+)
+## utility function for pretty printing
+pr <- function(m) printCoefmat(coef(summary(m)),
+                        digits=3,signif.stars=FALSE)
+```
+
+------------------------------------------------------------------------
+
+```{r coefmat1}
+pr(lm1 <- lm(colonies~place,data=ants))
+```
+
+-   The `(Intercept)` row refers to $\beta_1$, which is the mean density
+    in the "field" sites ("field" comes before "forest").
+-   The `placeforest` row indicates we are looking at the effect of
+    `forest` level of the `place` variable, i.e. the difference between
+    "forest" and "field" sites. (To know that "field" is the baseline
+    level we must (1) remember, or look at `unique(ants$place)` or (2)
+    notice which level is *missing* from the list of parameter
+    estimates.)
+
+## Figuring out the estimated values, not the differences
+
+R's behavior may seem annoying at first -- it seems like the estimated
+values of the groups are what we're really interested in -- but it is
+really designed for testing *differences among groups*. To get the
+estimates per group, you could:
+
+-   `predict` (base R)
+
+-   `emmeans` - package emmeans
+
+-   `plot(allEffects(mod1))` - package effects
+
+## Interpretation using `predict`
+
+-   Use the `predict` function:
+
+```{r predict}
+predict(lm1,newdata=data.frame(place=c("field","forest")),
+        interval="confidence")
+```
+
+## Interpretation using `effects` package
+
+-   Use the `effects` package:
+
+```{r effects,message=FALSE,warning=FALSE}
+library("effects")
+summary(allEffects(lm1))
+```
+
+## Interpretation using `emmeans` package
+
+-   Use the `emmeans` package:
+
+```{r emmeans,message=FALSE,warning=FALSE}
+library("emmeans")
+emmeans(lm1,specs=~place)
+```
+
+## Graphical summaries from `effects` package
+
+```{r alleffects}
+plot(allEffects(lm1))
+```
+
+## Switching to a dataset with more than two levels
+
+Some data on lizard perching behavior (`brglm` package; Schoener 1970
+*Ecology* **51**:408-418).
+
+```{r echo=FALSE,message=FALSE}
+if (!file.exists("lizards.csv")) {
+   require("brglm")
+   data(lizards)
+   lizards <- transform(lizards,N=grahami+opalinus,
+                     gfrac=grahami/(grahami+opalinus))
+   write.csv(lizards,file="lizards.csv")
+}
+```
+
+```{r fakelizards}
+lizards <- read.csv("lizards.csv")
+```
+
+Response is number of *Anolis grahami* lizards found on perches in
+particular conditions.
+
+------------------------------------------------------------------------
+
+```{r echo=FALSE,message=FALSE,fig.height=4,warning=FALSE}
+library(tidyr)
+library(dplyr)
+library("ggplot2"); theme_set(theme_bw()+
+                    theme(panel.spacing=grid::unit(0,"lines")))
+mliz <- lizards %>%
+    select(grahami,height,diameter,light,time) %>%
+    gather(variable,value,-grahami)
+
+ggplot(mliz,aes(x=value,y=grahami))+
+  geom_boxplot(,fill="lightgray")+
+  geom_point()+
+  facet_wrap(~variable,scale="free_x",nrow=1)+
+  geom_hline(yintercept=mean(lizards$grahami),colour="red",lwd=1,alpha=0.4)
+```
+
+## What is the effect of time of day on lizard perching?
+
+```{r timeregress1}
+pr(lmX <- lm(grahami~time,data=lizards))
+```
+
+If we leave the factors alphabetical then $\beta_1$="early",
+$\beta_2$="late"-"early", $\beta_3$="midday"-"early". It might be more
+sensible to change the levels in accordance with time progression.
+
+## Change the order of the levels:
+
+```{r reordertime}
+lizards <- mutate(lizards,
+        time=factor(time,
+            levels=c("early","midday","late")))
+```
+
+This just swaps the definitions of $\beta_2$ and $\beta_3$.
+
+```{r timeregress}
+pr(lmX <- lm(grahami~time,data=lizards))
+```
+
+## Multiple treatments and interactions
+
+## Additive model
+
+What is the effect of `light` AND `time` on lizard perching?
+
+```{r lizardTL1}
+pr(lmTL1 <- lm(grahami~time+light,data=lizards))
+```
+
+-   $\beta_1$ is the intercept ("early","shady");
+-   $\beta_2$ and $\beta_3$ are the differences from the baseline level
+    ("early") of the *first* variable (`time`) in the *baseline* level
+    of the other parameter(s) (`light`="shady");
+-   $\beta_4$ is the difference from the baseline level ("sunny") of the
+    *second* variable (`light`) in the *baseline* level of `time`
+    ("early").
+
+## Graphical interpretation
+
+```{r lizardcontrasts1,echo=FALSE}
+library("grid")
+pp <- with(lizards,expand.grid(time=unique(time),light=unique(light)))
+pp$grahami <- predict(lmTL1,newdata=pp)
+cc <- as.list(plyr::rename(coef(lmTL1),c(`(Intercept)`="int")))
+labelpos <- with(cc,
+  list(x=c(1,2,3,1),xend=c(1,2,3,1),
+      y=c(int,int,int,int),
+      yend=c(int,int+timemidday,int+timelate,int+lightsunny)))
+xpos <- -0.1
+ggplot(pp,aes(x=time,y=grahami,colour=light))+geom_point()+
+  geom_line(aes(group=light))+
+  annotate("segment",x=labelpos$x,xend=labelpos$xend,y=labelpos$y,
+           yend=labelpos$yend,alpha=0.5,
+           arrow=arrow(length = unit(0.3,"cm"),ends="both"))+
+  annotate("text",x=with(labelpos,(x+xend)/2)+xpos,y=with(labelpos,(y+yend)/2),
+label=paste0("beta[",1:4,"]"),parse=TRUE)+
+  annotate("segment",x=labelpos$x[1],xend=labelpos$x[3],y=labelpos$y[1],
+           yend=labelpos$y[1],alpha=0.3,lty=2)
+```
+
+## What are the p-values?
+
+```{r lizardPvalues}
+pr(lmTL2 <- lm(grahami~time+light,data=lizards))
+```
+
+The p-values tell us the difference from the baseline level, not from
+each other
+
+## Assessing differences among pairs of variable levels - load packages
+
+```{r lizardlsmeansPvalues}
+library(emmeans)
+library(multcompView)
+library(multcomp)
+```
+
+## Assessing differences among pairs of variable levels
+
+```{r output emmeans}
+emmeans(lmTL1, specs = "time", contr = "pairwise")
+```
+
+## Getting an ABCDEF.. list
+
+```{r lizardlsmeansPvaluesABClist}
+lsm1<-emmeans(lmTL1,pairwise~time)
+cld(lsm1$emmeans,by = NULL, Letters = "ABCDEFGHIJ") 
+```
+
+## Notes about compact letter displays
+
+-   This ability may be deprecated
+-   Compact-letter displays (CLDs) encourage a misleading interpretation
+    of significance testing by visually grouping means whose comparisons
+    have P \> 0.05 as though they are equal. (Both get the same letter)
+-   Failing to prove two means are different does not prove that they
+    are the same.
+
+## Interactions
+
+-   Interactions allow the value of one predictor to affect the
+    relationship between another predictor and the response variable
+- The hypothesis here is that the effect of one variable depends on the presence of another
+  - This is often true in science! What are some examples?
+
+## Interactions cont. 
+-   Interpreting *main effects* in the presence of interactions is tricky
+-   Your estimate of the effect of variable $X_1$ is no longer constant
+-   You need to pick a fixed point, or average in some way
+-   Example: $Y = a + b_1 X_1 + b_2 X_2 + b_{12} X_1*X_2$
+-   The response to $X_1$ is $Y = (a+b_2 X_2) + (b_1+b_{12}X_2) X_1$\
+-   The response to $X_1$ *depends on* the value of $X_2$.
+
+## An example
+
+-   You think that the number of lizards on a perch on a sunny day might
+    depend on the time day
+-   For example, on a very sunny day, there might be fewer lizards
+    perching at midday because it is very hot; whereas on a cloudy day, the number of lizards might be highest at midday
+
+## Testing interactions
+
+-   Use an *interaction*: $$
+    M = a + B_x X + B_t t + B_{xt} Xt
+    $$
+
+-   The interaction term $B_{xt}$ represents the *difference in the
+    response* between the two groups.
+
+-   It asks: **does the number of lizards perching depend on time of day
+    and light?**
+
+-   Could also write: $$
+    M = a + B_1 light + B_2 time + B_{3} light*time
+    $$
+
+## Interactions and parameters
+
+-   We can use emmeans and effects and get a pretty good idea
+    what's going on
+-   In more complicated cases, interaction terms may have many
+    parameters
+-   These have all the interpretation problems of other multi-parameter
+    variables
+
+## Interaction model
+
+```{r lizardTL2}
+pr(lmTL2 <- lm(grahami~time*light,data=lizards))
+```
+
+-   Parameters $\beta_1$ to $\beta_4$ have the same meanings as before.
+-   $\beta_5$ and $\beta_6$, labelled "timemidday:lightsunny" and
+    "timelate:lightsunny" describe the difference between the expected
+    mean value of these treatment combinations based on the additive
+    model
+
+## Interaction model cont
+
+```{r lizardTL2_cont}
+pr(lmTL2 <- lm(grahami~time*light,data=lizards))
+```
+
+-   num lizards when sunny at midday =
+    $\beta_1 + \beta_2 + \beta_4 + \beta_5$
+-   num lizards when sunny at late =
+    $\beta_1 + \beta_3 + \beta_4 + \beta_6$
+
+## Graphical version
+
+```{r lizardcontrasts2,echo=FALSE}
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length=n+1)
+  hcl(h=hues, l=65, c=100)[1:n]
+}
+pp2 <- pp
+pp2$grahami <- predict(lmTL2,newdata=pp)
+cc <- as.list(plyr::rename(coef(lmTL2),c(`(Intercept)`="int",
+        `timemidday:lightsunny`="midsunny",`timelate:lightsunny`="latesunny")))
+labelpos <- with(cc,
+  list(x=c(1,2,3,1,2,3),xend=c(1,2,3,1,2,3),
+      y=c(int,int,int,int,int+lightsunny+timemidday,int+lightsunny+timelate),
+      yend=c(int,int+timemidday,int+timelate,int+lightsunny,
+             int+timemidday+lightsunny+midsunny,int+timelate+lightsunny+latesunny)))
+xpos <- -0.1
+ggplot(pp2,aes(x=time,y=grahami,colour=light))+geom_point()+
+  geom_line(aes(group=light))+
+  annotate("segment",x=1:2,xend=2:3,
+           y=with(cc,c(int+lightsunny,int+timemidday+lightsunny)),
+           yend=with(cc,c(int+timemidday+lightsunny,int+timelate+lightsunny)),
+           colour=gg_color_hue(2)[2],lty=2)+
+  annotate("segment",x=labelpos$x,xend=labelpos$xend,y=labelpos$y,
+           yend=labelpos$yend,alpha=0.5) +
+           ## arrow=arrow(length = unit(0.3,"cm"),ends="both"))+
+  annotate("text",x=with(labelpos,(x+xend)/2)+xpos,y=with(labelpos,(y+yend)/2),
+label=paste0("beta[",1:6,"]"),parse=TRUE)+
+  annotate("segment",x=rep(labelpos$x[1],2),
+                     xend=rep(labelpos$x[3],2),
+                     y=labelpos$yend[c(1,4)],
+                     yend=labelpos$yend[c(1,4)],alpha=0.3,lty=2)
+```
+
+## Effects plot
+
+```{r}
+plot(allEffects(lmTL2))
+```
+
+## Next up:
+- how to write up results and glms + other distributions
+- assigned reading and quiz
+
+
+## Assignment - *PART 1*
+
+1.  Make a univariate linear model for one of your hypotheses
+2.  Examine the assumptions of linearity (using tests or diagnostic
+    plots) and explain
+3.  Plot the relationship in ggplot using stat_smooth (continuous) or
+    stat_summary (discrete)
+
+## In-class work - Thursday (Working in a group):
+
+1.  Make a linear model (with more than one variable) for one of your
+    hypotheses. Articulate which hypothesis you are testing.
+
+2.  Use an interactive model and an additive model. Explain what
+    hypothesis each of these is testing, and what the R output is
+    telling you about your data. (Hint: you can use emmeans, effects,
+    relevel, or predict to help you.) You should include this
+    explanation in your code.
+
+3.  Plot your model (e.g. using predict) and overlay the model on top of
+    the underlying data. See code for example to plot both model and
+    data.
