@@ -20,13 +20,17 @@ opts_chunk$set(fig.width=6,fig.height=4,fig.align="center",tidy=FALSE)
 ```
 
 ## Roadmap of the rest of the class
-- Some individual projects left but much will be integrated into the group project
-- Next group project due: Preliminary analyses and figures for *Final group presentation*
-  - every group member must contribute one figure + one analysis
-  - these should be decided on in advance and communicated among member
-  - Prelim: April 8, Presentations: April 30
-- You will also hand in an *individual* final project write-up
-  - I will run through them an AI checker
+
+-   Some individual projects left but much will be integrated into the
+    group project
+-   Next group project due: Preliminary analyses and figures for *Final
+    group presentation*
+    -   every group member must contribute one figure + one analysis
+    -   these should be decided on in advance and communicated among
+        member
+    -   Prelim: April 8, Presentations: April 30
+-   You will also hand in an *individual* final project write-up
+    -   I will run through them an AI checker
 
 ## Objectives
 
@@ -39,8 +43,7 @@ opts_chunk$set(fig.width=6,fig.height=4,fig.align="center",tidy=FALSE)
 
 -   Parameters of a linear model typically characterize *differences* in
     means
--   These are differences per unit of change for *continuous*
-    predictors,
+-   These are differences per unit of change for *continuous* predictors
 -   These are differences between groups (or between group averages) for
     *categorical* predictors
     -   Refresh: categorical predictors are referenced against a
@@ -49,13 +52,13 @@ opts_chunk$set(fig.width=6,fig.height=4,fig.align="center",tidy=FALSE)
 ## Coding for categorical predictors: contrasts
 
 -   What do the parameters of a linear model mean?
-  - other names for parameters: coefs, slopes (continuous), $\beta$
+-   other names for parameters: coefs, slopes (continuous), $\beta$
 -   Start with categorical variables, because they're potentially more
     confusing ("intercept and slope" isn't too hard)
 -   Default R behaviour: *treatment contrasts*
     -   $\beta_1$ = expected value in baseline group (= first level of
-        the factor variable, by default the first in alphabetical
-        order, labeled **Intercept**);
+        the factor variable, by default the first in alphabetical order,
+        labeled **Intercept**);
     -   $\beta_i$ = expected difference between group $i$ and the first
         group.
 
@@ -299,11 +302,14 @@ cld(lsm1$emmeans,by = NULL, Letters = "ABCDEFGHIJ")
 
 -   Interactions allow the value of one predictor to affect the
     relationship between another predictor and the response variable
-- The hypothesis here is that the effect of one variable depends on the presence of another
-  - This is often true in science! What are some examples?
+-   The hypothesis here is that the effect of one variable depends on
+    the presence of another
+    -   This is often true in science! What are some examples?
 
-## Interactions cont. 
--   Interpreting *main effects* in the presence of interactions is tricky
+## Interactions cont.
+
+-   Interpreting *main effects* in the presence of interactions is
+    tricky
 -   Your estimate of the effect of variable $X_1$ is no longer constant
 -   You need to pick a fixed point, or average in some way
 -   Example: $Y = a + b_1 X_1 + b_2 X_2 + b_{12} X_1*X_2$
@@ -315,7 +321,8 @@ cld(lsm1$emmeans,by = NULL, Letters = "ABCDEFGHIJ")
 -   You think that the number of lizards on a perch on a sunny day might
     depend on the time day
 -   For example, on a very sunny day, there might be fewer lizards
-    perching at midday because it is very hot; whereas on a cloudy day, the number of lizards might be highest at midday
+    perching at midday because it is very hot; whereas on a cloudy day,
+    the number of lizards might be highest at midday
 
 ## Testing interactions
 
@@ -335,8 +342,8 @@ cld(lsm1$emmeans,by = NULL, Letters = "ABCDEFGHIJ")
 
 ## Interactions and parameters
 
--   We can use emmeans and effects and get a pretty good idea
-    what's going on
+-   We can use emmeans and effects and get a pretty good idea what's
+    going on
 -   In more complicated cases, interaction terms may have many
     parameters
 -   These have all the interpretation problems of other multi-parameter
@@ -406,9 +413,9 @@ plot(allEffects(lmTL2))
 ```
 
 ## Next up:
-- how to write up results and glms + other distributions
-- assigned reading and quiz
 
+-   how to write up results and glms + other distributions
+-   assigned reading and quiz
 
 ## Assignment - *PART 1*
 
@@ -417,6 +424,36 @@ plot(allEffects(lmTL2))
     plots) and explain
 3.  Plot the relationship in ggplot using stat_smooth (continuous) or
     stat_summary (discrete)
+
+## Group Assignment - Prelim {.smaller}
+
+Each group member should plan to contribute 1 figure + 1 analysis to the
+final presentation.
+
+For this assignment, I am looking for:
+
+1.  A short write-up or table (either is fine) of hypotheses you plan to
+    test and figures you plan to make, and who will complete those
+    (which group member). Your write should also include an update on
+    your progress merging temperature data with your other datasets.
+
+2.  Some preliminary plots of each hypothesis, in individual R scripts.
+    Each group member can upload their script separately to your joint
+    project GitHub. These should be labeled with your name and indicate
+    they are preliminary e.g. "langwig_prelim_bats.R" . Therefore, there
+    should be a total of 4 scripts in the repository for these
+    preliminary analyses - one for each group member.
+
+3.  An updated README explaining all 4 scripts and which data files they
+    are using.
+
+## Group Assignment - AI {.smaller}
+
+The use of generative AI (e.g. ChatGPT) is **not** allowed.
+
+It is okay to google your error messages, or google "how can change the
+colors in this plot?", or "how can i remove this legend from my plot"
+but you should not use generative AI to make your code.
 
 ## In-class work - Thursday (Working in a group):
 
