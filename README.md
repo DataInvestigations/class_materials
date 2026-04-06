@@ -8,6 +8,10 @@ GitHub Documents
 ----------------
 This repository contains the course documents. The files you'll need are given week by week. 
 
+Course Schedule
+----------------
+[Topics by Week](https://docs.google.com/spreadsheets/d/1wrJyMB2GarLvCcgu6rTkHH0aZuFh_H-I84vAgMvf0Kw/edit?usp=sharing)
+
 Week 1
 -------------------
 #### Tuesday: 
